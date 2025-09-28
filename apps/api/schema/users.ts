@@ -1,18 +1,31 @@
-import * as p from 'drizzle-orm/sqlite-core'
+import * as sqlite from 'drizzle-orm/sqlite-core'
 import { Base, baseSchema } from './base'
 import { relations } from 'drizzle-orm'
 import { Role } from './roles'
 import { userRoles } from './user-roles'
+import { Unit, units } from './units'
 
-export const users = p.sqliteTable('users', {
-	...baseSchema,
-	username: p.text().notNull().unique(),
-	password: p.text().notNull(),
-	displayName: p.text().notNull().default('')
-})
+export const users = sqlite.sqliteTable(
+	'users',
+	{
+		...baseSchema,
+		username: sqlite.text().notNull().unique(),
+		password: sqlite.text().notNull(),
+		displayName: sqlite.text().notNull().default(''),
+		unitId: sqlite
+			.int()
+			.notNull()
+			.default(7)
+			.references(() => units.id)
+	},
+	(t) => [
+		sqlite.unique('class_unit_unique_constraint').on(t.username, t.unitId)
+	]
+)
 
-export const usersRelations = relations(users, ({ many }) => ({
-	roles: many(userRoles)
+export const usersRelations = relations(users, ({ one, many }) => ({
+	roles: many(userRoles),
+	unit: one(units, { fields: [users.unitId], references: [units.id] })
 }))
 
 export interface UserDB extends Base {
